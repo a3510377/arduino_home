@@ -2,14 +2,14 @@
 
 ###### tags: `arduino`
 
-> Hi
+> 尚未開發完成
 
 > [TOC]
 
 ## :memo: Where do I start?
 
 1. installs Library
-2. `git clone ` or download this `.zip` file
+2. `git clone https://github.com/a3510377/arduino_home.git` or download [this `.zip` file](https://github.com/a3510377/arduino_home/archive/refs/heads/master.zip)
 3. use [arduino IDE](https://www.arduino.cc/en/software) open arduino_home.ino
 4. add `http://arduino.esp8266.com/stable/package_esp8266com_index.json` to arduino IDE
 
