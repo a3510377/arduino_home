@@ -13,6 +13,7 @@
 #include <ESPAsyncWebServer.h>
 
 int checkBtnTime = 0;
+Adafruit_SSD1306 display(-1);
 AsyncWebServer server(80);
 DHT dht(D0, DHT11);  // 室內
 DHT dht2(D1, DHT11); // 室外
@@ -23,6 +24,8 @@ _Data loopDHT(DHT _dht);
 void setup()
 {
     SPIFFS.begin();
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3c);
+    display.clearDisplay();
     Serial.begin(9600);
     dht.begin();
     dht2.begin();

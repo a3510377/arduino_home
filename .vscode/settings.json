@@ -1,7 +1,8 @@
 {
     "cSpell.words": [
         "Adafruit",
-        "println"
+        "println",
+        "SWITCHCAPVCC"
     ],
     "liveServer.settings.port": 5501
 }
