@@ -1,42 +1,67 @@
 /** 
  * use LoLin
  * pins:
- * * dht11.data(室內) -> D0
- * * dht11.data(室外) -> D1
+ * * button -> d0
+ * * oled.SCK -> D1
+ * * oled.SDA -> D2
+ * * dht11.DATA(室內) -> D5
+ * * dht11.DATA(室外) -> D6
+ * * 
  */
 
 #include "main.h"
 #include <FS.h>
 #include <DHT.h>
+#include <ThreeWire.h>
+#include <RtcDS1302.h>
 #include <ESPAsyncTCP.h>
 #include <ESP8266WiFi.h>
 #include <ESPAsyncWebServer.h>
 
+static const uint8_t dhtType = DHT11; // 室內室外 dht 型號
+
 int checkBtnTime = 0;
-Adafruit_SSD1306 display(-1);
-AsyncWebServer server(80);
-DHT dht(D0, DHT11);  // 室內
-DHT dht2(D1, DHT11); // 室外
+AsyncWebServer server(80);        // async web server
+Adafruit_SSD1306 display(-1);     // OLED
+ThreeWire myWire(D6, D5, D3);     // Clock
+RtcDS1302<ThreeWire> Rtc(myWire); // Clock
+DHT dht(D5, dhtType);             // 室內
+DHT dht2(D6, dhtType);            // 室外
 
 void webInit();
 _Data loopDHT(DHT _dht);
 
 void setup()
 {
-    SPIFFS.begin();
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3c);
-    display.clearDisplay();
-    Serial.begin(9600);
+    /* DHT setup */
     dht.begin();
     dht2.begin();
-    webInit();
+
+    SPIFFS.begin();                            // load file setup
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3c); // OLED setup
+    display.clearDisplay();                    // OLED clear display
+    Serial.begin(9600);                        // Serial setup
+    webInit();                                 // web init
+
+    /* pin setup */
+    pinMode(D0, INPUT);
 }
 
 void loop()
 {
+    bool btnIs = digitalRead(D0);
+    if (btnIs)
+        checkBtnTime++;
+    else
+    {
+        if (checkBtnTime > 3)
+        {
+        }
+        checkBtnTime = 0;
+    }
     loopDHT(dht);
     loopDHT(dht2);
-    delay(1e3); //延時5秒
+    delay(s * .2); //延時.2s
 }
 
 /** server init */

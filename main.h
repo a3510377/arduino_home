@@ -13,6 +13,11 @@
 #define D9 3
 #define D10 1
 
+/* time */
+const int s = 1e3;
+const int m = s * 60;
+const int h = m * 60;
+
 /* 溫度模型 */
 class temperature
 {
@@ -30,22 +35,20 @@ public:
         else
             ErrorInfo = "";
     }
+    String checkError()
+    {
+        return ErrorInfo;
+    }
     float getH()
     {
-        if (ErrorInfo.length() > 0)
-            return ErrorInfo;
         return h;
     }
     float getT()
     {
-        if (ErrorInfo.length() > 0)
-            return ErrorInfo;
         return t;
     }
     float getF()
     {
-        if (ErrorInfo.length() > 0)
-            return ErrorInfo;
         return f;
     }
 };
