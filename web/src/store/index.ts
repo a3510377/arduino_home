@@ -1,8 +1,14 @@
-import { createStore } from 'vuex'
+import { createStore } from "vuex"
 
 export default createStore({
-  state: {},
-  mutations: {},
+  state: {
+    alertMsg: false,
+  },
+  mutations: {
+    alertMsg(state) {
+      state.alertMsg = false
+    },
+  },
   actions: {},
   modules: {},
   getters: {},

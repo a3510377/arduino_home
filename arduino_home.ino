@@ -21,15 +21,20 @@
 static const uint8_t dhtType = DHT11; // 室內室外 dht 型號
 
 int checkBtnTime = 0;
-AsyncWebServer server(80);        // async web server
-Adafruit_SSD1306 display(-1);     // OLED
-ThreeWire myWire(D6, D5, D3);     // Clock
+/** web */
+AsyncWebServer server(80);
+/** OLED */
+Adafruit_SSD1306 display(-1);
+ThreeWire myWire(D6, D5, D3);
+/** Clock */
 RtcDS1302<ThreeWire> Rtc(myWire); // Clock
-DHT dht(D5, dhtType);             // 室內
-DHT dht2(D6, dhtType);            // 室外
+/** 室內 */
+DHT dht(D5, dhtType);
+/** 室外 */
+DHT dht2(D6, dhtType);
 
 void webInit();
-_Data loopDHT(DHT _dht);
+temperature loopDHT(DHT _dht);
 
 void setup()
 {
