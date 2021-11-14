@@ -52,3 +52,8 @@ public:
         return f;
     }
 };
+
+int toSbtnDelayTime(int date)
+{
+    return date / (s * .2)
+}

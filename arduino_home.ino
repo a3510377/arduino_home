@@ -19,12 +19,16 @@
 #include <ESPAsyncWebServer.h>
 
 static const uint8_t dhtType = DHT11; // 室內室外 dht 型號
+const bool debug = false;             // 是否開啟 Debug 模式
 
+/* btn Low time */
 int checkBtnTime = 0;
 /** web */
 AsyncWebServer server(80);
+/** ws */
+AsyncWebSocket ws("/ws");
 /** OLED */
-Adafruit_SSD1306 display(-1);
+// Adafruit_SSD1306 display(-1);
 ThreeWire myWire(D6, D5, D3);
 /** Clock */
 RtcDS1302<ThreeWire> Rtc(myWire); // Clock
@@ -33,7 +37,9 @@ DHT dht(D5, dhtType);
 /** 室外 */
 DHT dht2(D6, dhtType);
 
+/* 定義函數 */
 void webInit();
+void callBtn(int date);
 temperature loopDHT(DHT _dht);
 
 void setup()
@@ -42,26 +48,29 @@ void setup()
     dht.begin();
     dht2.begin();
 
-    SPIFFS.begin();                            // load file setup
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3c); // OLED setup
-    display.clearDisplay();                    // OLED clear display
-    Serial.begin(9600);                        // Serial setup
-    webInit();                                 // web init
+    Rtc.Begin();    // time setup
+    SPIFFS.begin(); // load file setup
+    // display.begin(SSD1306_SWITCHCAPVCC, 0x3c); // OLED setup
+    // display.clearDisplay();                    // OLED clear display
+    Serial.begin(9600); // Serial setup
+    webInit();          // web init
+
+    if (build)
+        Rtc.SetDateTime(RtcDateTime(__DATE__, __TIME__));
 
     /* pin setup */
     pinMode(D0, INPUT);
 }
 
+/* 主程式延遲 .2s */
 void loop()
 {
     bool btnIs = digitalRead(D0);
     if (btnIs)
         checkBtnTime++;
-    else
+    else if (checkBtnTime > 0)
     {
-        if (checkBtnTime > 3)
-        {
-        }
+        callBtn(checkBtnTime);
         checkBtnTime = 0;
     }
     loopDHT(dht);
@@ -101,4 +110,23 @@ temperature loopDHT(DHT _dht)
     Serial.print(_Data.getF());
     Serial.print("*F\n");
     return _Data;
+}
+
+void callBtn(int date)
+{
+    if (date < toSbtnDelayTime(2e3))
+    {
+    }
+    else if (date < toSbtnDelayTime(3e3))
+    {
+    }
+    else if (date < toSbtnDelayTime(3e3))
+    {
+    }
+    else if (date < toSbtnDelayTime(3e3))
+    {
+    }
+    else if (date < toSbtnDelayTime(3e3))
+    {
+    }
 }
