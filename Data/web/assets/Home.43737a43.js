@@ -1,0 +1,1 @@
+import{_ as a}from"./index.4debf5db.js";import{c as r,o as s,F as t,a as e}from"./vendor.41b16fa2.js";var n={name:"HOME",data(){return{}}};const o=e("div",{class:"temperature"},null,-1),c=e("div",{class:"config"},null,-1);function d(_,l){return s(),r(t,null,[o,c],64)}var m=a(n,[["render",d]]);export{m as default};

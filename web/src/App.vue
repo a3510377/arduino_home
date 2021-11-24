@@ -1,5 +1,6 @@
 <template>
   <Alert />
+  <router-view class="wrapper" />
 </template>
 
 <script lang="ts">
@@ -8,7 +9,7 @@ import { useStore } from "vuex"
 import Alert from "@/components/alert.vue"
 
 export default defineComponent({
-  name: "HelloWorld",
+  name: "APP",
   data() {
     return {
       $store: useStore(),
