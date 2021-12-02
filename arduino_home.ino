@@ -26,6 +26,10 @@
 /* btn Low time */
 int checkBtnTime = 0;
 int delayDHT = 0;
+float oldT;
+String wifiName;
+String wifiPassword;
+
 /** web */
 AsyncWebServer server(80);
 /** ws */
@@ -37,12 +41,17 @@ ThreeWire myWire(D7, D8, D3);
 RtcDS1302<ThreeWire> Rtc(myWire); // Clock
 /** DHT */
 DHT dht(D5, dhtType);
+IPAddress IP(192, 168, 1, 1);
 
 /* 定義函數 */
 void webInit();
 void callBtn(int date);
-void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+void upDataWifiConfig();
 temperature loopDHT(DHT _dht);
+void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
+void setTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second);
+void setWifiType();
+String TimeString(String Type = "Date");
 
 void setup()
 {
@@ -53,14 +62,19 @@ void setup()
     display.clearDisplay();
     display.display();
     Rtc.Begin();        // time setup
-    SPIFFS.begin();     // load file setup
     Serial.begin(9600); // Serial setup
-    webInit();          // web init
+    SPIFFS.begin();     // load file setup
+
+    upDataWifiConfig();
+    setWifiType();
+
     Serial.print(__DATE__);
     Serial.println(__TIME__);
+
     if (debug)
         Rtc.SetDateTime(RtcDateTime(__DATE__, __TIME__));
 
+    webInit(); // web init
     ws.onEvent(wsEvent);
     server.addHandler(&ws);
 
@@ -88,43 +102,51 @@ void loop()
 void webInit()
 {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(200, "text/html", R"rawliteral(<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
-    <script type="module" crossorigin src="/assets/index.b11105bc.js"></script>
-    <link rel="modulepreload" href="/assets/vendor.41b16fa2.js" />
-    <link rel="stylesheet" href="/assets/index.32536ca2.css" />
-  </head>
-
-  <body>
-    <div id="app"></div>
-  </body>
-</html>
-)rawliteral"); });
+              { request->send(SPIFFS, "/web/index.html", "text/html"); });
     Dir dir = SPIFFS.openDir("/web");
     while (dir.next())
     {
-        int str_len = dir.fileName().length() + 1;
+        String fileName = dir.fileName();
+        String Uri = fileName.substring(4);
+        int str_len = fileName.length() + 1;
+        int Uri_len = Uri.length() + 1;
         char char_array[str_len];
-        dir.fileName().toCharArray(char_array, str_len);
-        server.serveStatic(char_array, SPIFFS, char_array);
-        Serial.print("load: ");
-        Serial.println(char_array);
-    }
-    server.on("/setTime", HTTP_POST, [](AsyncWebServerRequest *request) {
+        char char_arrayUri[Uri_len];
 
-    });
+        fileName.toCharArray(char_array, str_len);
+        Uri.toCharArray(char_arrayUri, Uri_len);
+
+        server.serveStatic(char_arrayUri, SPIFFS, char_array);
+
+        Serial.print("load: ");
+        Serial.print(char_array);
+        Serial.print("url:");
+        Serial.println(char_arrayUri);
+    }
+    server.on("/setTime", HTTP_POST, [](AsyncWebServerRequest *request)
+              {
+                  Serial.print(request->args());
+                  //                  String year = request->arg("year");
+                  //                  String month = request->arg("month");
+                  //                  String day = request->arg("day");
+                  //                  String hour = request->arg("hour");
+                  //                  String minute = request->arg("minute");
+                  //                  String second = request->arg("second");
+                  //                  if (year && month && day && hour && minute && second)
+                  //                      setTime((int)year, (int)month, (int)day, (int)hour, (int)minute, (int)second);
+                  //                  else
+                  //                      return request->send(400, "text/plane", "格式錯誤");
+                  String req = "{";
+                  //                  req += "\"Time\":\"" + TimeString("Time") + "\",";
+                  //                  req += "\"Date\":\"" + TimeString("Date") + "\"";
+                  req += "}";
+                  request->send(200, "text/plane", req);
+              });
+    server.on("/setWifi", HTTP_POST, [](AsyncWebServerRequest *request) {});
     server.begin();
 }
-temperature loopDHT(DHT _dht)
+String TimeString(String Type)
 {
-    temperature _Data(_dht.readHumidity(),
-                      _dht.readTemperature(),
-                      _dht.readTemperature(true));
     RtcDateTime dt = Rtc.GetDateTime();
     int second = dt.Second(),
         minute = dt.Minute(),
@@ -137,18 +159,26 @@ temperature loopDHT(DHT _dht)
         Time[25];
     sprintf(Date, "%02u/%02u/%02u", year, month, day);
     sprintf(Time, "%02u:%02u:%02u", hour, minute, second);
+    return (String)(Type == "Date" ? Date : Time);
+}
+temperature loopDHT(DHT _dht)
+{
+    temperature _Data(_dht.readHumidity(),
+                      _dht.readTemperature(),
+                      _dht.readTemperature(true));
+
     display.clearDisplay();
     display.display();
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(25, 0);
     display.setTextSize(1.5);
-    display.println(Date);
+    display.println(TimeString(String("Date")));
     display.setTextSize(1);
     display.println("---------------------");
     display.setCursor(15, 20);
     display.setTextSize(2);
-    display.println(Time);
-    if (!_Data.checkError())
+    display.println(TimeString(String("Time")));
+    if (!_Data.error)
     {
         Serial.print("濕度: ");
         Serial.print(_Data.getH());
@@ -159,19 +189,20 @@ temperature loopDHT(DHT _dht)
         Serial.print("華氏溫度: ");
         Serial.print(_Data.getF());
         Serial.print("*F\n");
-
-        display.setCursor(28, 40);
-        display.setTextSize(3);
-        display.print(_Data.getT(), 1);
-        display.print((char)247);
-        String data = "";
-        data += "Time:" + String(Time) + ";";
-        data += "Date" + String(Date) + ";";
-        data += "H:" + (String)_Data.getH() + ";";
-        data += "C:" + (String)_Data.getT() + ";";
-        data += "F:" + (String)_Data.getF() + ";";
+        oldT = _Data.getT();
+        String data = "{";
+        data += "\"Time\":\"" + String(TimeString("Time")) + "\",";
+        data += "\"Date\":\"" + String(TimeString("Date")) + "\",";
+        data += "\"H\":\"" + (String)_Data.getH() + "\",";
+        data += "\"C\":\"" + (String)_Data.getT() + "\",";
+        data += "\"F\":\"" + (String)_Data.getF() + "\"";
+        data += "}";
         ws.textAll(data);
     }
+    display.setCursor(28, 40);
+    display.setTextSize(3);
+    display.print(oldT, 1);
+    display.print((char)247);
     display.display();
     /*  */
     return _Data;
@@ -216,4 +247,49 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     case WS_EVT_ERROR:
         break;
     }
+}
+
+void setTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second)
+{
+    // YYYY, MM, DD, HH, II, SS
+    Rtc.SetDateTime(RtcDateTime(year, month, day, hour, minute, second));
+}
+
+void upDataWifiConfig()
+{
+    File file = SPIFFS.open("/setting/wifi.txt", "r");
+    String wifiConfig;
+    while (file.available())
+        wifiConfig = file.readString();
+    wifiName = wifiConfig.substring(wifiConfig.indexOf("name:") + 5, wifiConfig.indexOf(";"));
+    wifiPassword = wifiConfig.substring(wifiConfig.indexOf("password:") + 9, wifiConfig.indexOf(";"));
+    Serial.print(wifiName);
+    Serial.print(wifiPassword);
+    file.close();
+}
+
+void setWifiType()
+{
+    if (wifiName.length() > 0 || (wifiName.length() > 0 && wifiPassword.length() > 0))
+    {
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(wifiName, wifiPassword);
+    }
+    else
+    {
+        WiFi.mode(WIFI_AP);
+        WiFi.softAPConfig(IP, IP, IPAddress(255, 255, 255, 0));
+        WiFi.softAP(AP_ssid, password);
+    }
+    display.clearDisplay();
+    display.display();
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.setTextSize(2);
+    display.print("mode:");
+    display.println(WiFi.getMode());
+    display.print("IP:");
+    display.println(WiFi.softAPIP() || WiFi.localIP());
+    display.display();
+    delay(s * 5);
 }

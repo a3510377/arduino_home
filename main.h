@@ -28,10 +28,14 @@ private:
     String ErrorInfo;
 
 public:
+    bool error = false;
     temperature(float h, float t, float f) : h(h), t(t), f(f)
     {
         if (isnan(h) || isnan(t) || isnan(f))
+        {
             ErrorInfo = "dht:error";
+            error = true;
+        }
         else
             ErrorInfo = "";
     }
